@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grand Slam — Visualise Your Court</title>
+<link rel="icon" href="assets/favicon.svg">
+<style>
+:root { --bg:#0b1020; --card:#0b122a; --fg:#e6edf3; --muted:#99a3b2; --ac:#3b82f6; --bd:#1e293b; }
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0b122a,#0b1020);color:var(--fg);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+h1{font-size:1.6rem;margin:0 0 8px}
+.cards{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+@media (max-width:1000px){.cards{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;box-shadow:0 6px 28px rgba(0,0,0,.25)}
+.pad{padding:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.btn{border:1px solid var(--bd);background:#0e1735;color:var(--fg);padding:10px 14px;border-radius:12px;cursor:pointer}
+.btn.primary{background:var(--ac);border-color:var(--ac);color:#fff}
+.input{background:#0e1735;border:1px solid var(--bd);color:var(--fg);padding:10px 12px;border-radius:12px;width:100%}
+.label{color:var(--muted);font-size:.9rem;margin-bottom:4px;display:block}
+.badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#0e1735;border:1px solid var(--bd);cursor:pointer;font-size:.85rem}
+.grid{display:grid;gap:12px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:1fr 1fr 1fr}
+@media (max-width:780px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.palette{display:grid;grid-template-columns:repeat(12,20px);gap:6px}
+.sw{width:20px;height:20px;border-radius:6px;border:1px solid #0003;cursor:pointer}
+select, input[type="color"]{height:40px}
+.tabbar{display:flex;gap:8px;margin:8px 0 12px}
+.tab{padding:8px 12px;border-radius:12px;border:1px solid var(--bd);cursor:pointer}
+.tab.active{background:var(--ac);border-color:var(--ac);color:#fff}
+.canvasWrap{background:#0d142c;border-top-left-radius:16px;border-top-right-radius:16px;overflow:hidden}
+.view-field #stage{transform:perspective(1200px) rotateX(20deg) scale(1);transform-origin:top center}
+.footer{display:flex;align-items:center;justify-content:space-between;color:var(--muted);padding:10px 16px;border-top:1px solid var(--bd);font-size:.9rem}
+.small{font-size:.85rem;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Visualise Your Court</h1>
+    <div class="small">Select a sport, choose your colours, toggle aerial/field view, then download & send with your enquiry.</div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="pad">
+          <div class="tabbar">
+            <button id="tab-tennis" class="tab active">Tennis</button>
+            <button id="tab-basketball" class="tab">Basketball</button>
+            <button id="tab-netball" class="tab">Netball</button>
+            <button id="tab-pickleball" class="tab">Pickleball</button>
+          </div>
+          <div class="tabbar">
+            <button id="view-aerial" class="tab active">Aerial View</button>
+            <button id="view-field" class="tab">Field View</button>
+          </div>
+          <div class="canvasHost canvasWrap">
+            <canvas id="stage" width="1200" height="700"></canvas>
+          </div>
+          <div class="footer">
+            <div class="row">
+              <button class="btn" id="btn-png">Download PNG</button>
+              <button class="btn" id="btn-pdf">Download PDF</button>
+            </div>
+            <div class="small">Tip: Use the swatch palette to apply colours quickly.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card pad">
+        <div class="grid">
+          <div>
+            <label class="label">Play area</label>
+            <input id="color-play" type="color" class="input" value="#226d2b">
+          </div>
+          <div>
+            <label class="label">Run‑off / Surround</label>
+            <input id="color-runoff" type="color" class="input" value="#b24b1a">
+          </div>
+          <div>
+            <label class="label">Lines</label>
+            <input id="color-lines" type="color" class="input" value="#ffffff">
+          </div>
+
+          <div id="row-key" style="display:none;">
+            <label class="label">Key / Paint (basketball)</label>
+            <input id="color-key" type="color" class="input" value="#1ea7ff">
+          </div>
+          <div id="row-circle" style="display:none;">
+            <label class="label">Centre circle (basketball / netball)</label>
+            <input id="color-circle" type="color" class="input" value="#1ea7ff">
+          </div>
+          <div id="row-kitchen" style="display:none;">
+            <label class="label">Kitchen area (pickleball)</label>
+            <input id="color-kitchen" type="color" class="input" value="#1ea7ff">
+          </div>
+
+          <div>
+            <label class="label">Quick palette</label>
+            <div id="palette" class="palette"></div>
+          </div>
+
+          <div class="card pad" style="background:#0e1735;">
+            <div style="font-weight:600;margin-bottom:6px;">Send design for a quote</div>
+            <form data-form="lead" method="POST" class="grid">
+              <input type="hidden" name="_subject" value="New Visualiser Enquiry — Grand Slam Surfacing">
+              <input type="hidden" name="_template" value="table">
+              <input type="hidden" name="_captcha" value="false">
+              <div class="grid grid-2">
+                <input class="input" name="name" placeholder="Full name" required>
+                <input class="input" type="email" name="email" placeholder="name@example.com" required>
+              </div>
+              <div class="grid grid-2">
+                <input class="input" name="phone" placeholder="+27 ...">
+                <input class="input" name="location" placeholder="City">
+              </div>
+              <textarea class="input" name="notes" placeholder="Notes about your court (sizes, surface, etc.)"></textarea>
+              <button class="btn primary" type="submit">Enquire</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+const EMAIL = "greymc041.ai@gmail.com";
+const PALETTE = ["#0b2a66", "#1e40af", "#0077c8", "#1ea7ff", "#14b8a6", "#22c55e", "#2b7a4b", "#1f5130", "#8b4513", "#b24b1a", "#eab308", "#f97316", "#ef4444", "#dc2626", "#f43f5e", "#a855f7", "#6b21a8", "#4b5563", "#111827", "#000000", "#ffffff", "#f1f5f9", "#e2e8f0", "#94a3b8", "#334155", "#475569", "#16a34a", "#84cc16", "#65a30d", "#f59e0b", "#fb923c", "#22d3ee", "#06b6d4", "#60a5fa", "#93c5fd", "#64748b"];
+
+const stage = document.getElementById('stage');
+const ctx = stage.getContext('2d');
+let state = {
+  sport: 'tennis',
+  view: 'aerial',
+  colours: {
+    lines: '#ffffff',
+    play: '#226d2b',
+    runoff: '#b24b1a',
+    key: '#1ea7ff',
+    circle: '#1ea7ff',
+    kitchen: '#1ea7ff',
+  },
+  size: 'std'
+};
+
+// --- helpers
+function px(n) { return Math.round(n); }
+function clear() { ctx.clearRect(0,0,stage.width,stage.height); }
+function setFill(c){ ctx.fillStyle = c; }
+function setStroke(c,w=6){ ctx.strokeStyle=c; ctx.lineWidth=w; ctx.lineCap='square'; }
+
+// --- Drawing primitives
+function rect(x,y,w,h,fill=null,stroke=null,wid=null){ if(fill){setFill(fill);ctx.fillRect(x,y,w,h);} if(stroke){setStroke(stroke,wid||6);ctx.strokeRect(x,y,w,h);} }
+function line(x1,y1,x2,y2,stroke=null,wid=null){ if(stroke) setStroke(stroke,wid||6); ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+function circle(cx,cy,r,stroke=null,wid=null,fill=null){ if(fill){setFill(fill); ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();} if(stroke){ setStroke(stroke,wid||6); ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke(); } }
+function arc(cx,cy,r,a1,a2,stroke=null,wid=null){ if(stroke){ setStroke(stroke,wid||6); ctx.beginPath(); ctx.arc(cx,cy,r,a1,a2); ctx.stroke(); } }
+
+// --- Dimension-accurate drawings (scaled to canvas)
+
+function drawTennis() {
+  // dims metres
+  const L=23.77, W=10.97, S=8.23, alley=(W-S)/2, run=3, scale = 26; // px/m
+  const vw = (L+2*run)*scale, vh=(W+2*run)*scale;
+  stage.width = 1200; stage.height = Math.round(1200*vh/vw);
+  const x0 = run*scale, y0 = run*scale;
+
+  clear();
+  // backgrounds
+  rect(0,0,stage.width,stage.height,state.colours.runoff);
+  // transform to scale
+  ctx.save();
+  ctx.translate((stage.width - L*scale)/2, (stage.height - W*scale)/2);
+  rect(x0, y0, L*scale, W*scale, state.colours.play);
+
+  // lines
+  const LS = state.colours.lines;
+  rect(x0, y0, L*scale, W*scale, null, LS);  // boundary
+  // singles sidelines
+  line(x0, y0 + alley*scale, x0 + L*scale, y0 + alley*scale, LS);
+  line(x0, y0 + (W - alley)*scale, x0 + L*scale, y0 + (W - alley)*scale, LS);
+  // net
+  line(x0 + (L/2)*scale, y0, x0 + (L/2)*scale, y0 + W*scale, LS);
+  // service lines
+  const s1 = (L/2 - 6.40), s2 = (L/2 + 6.40);
+  line(x0 + s1*scale, y0 + alley*scale, x0 + s1*scale, y0 + (W-alley)*scale, LS);
+  line(x0 + s2*scale, y0 + alley*scale, x0 + s2*scale, y0 + (W-alley)*scale, LS);
+  // center service
+  line(x0 + (L/2)*scale, y0 + alley*scale, x0 + (L/2)*scale, y0 + (W-alley)*scale, LS);
+  // centre marks (0.10 m)
+  const cm=0.10; const cx=W/2;
+  line(x0, y0 + cx*scale, x0 + cm*scale, y0 + cx*scale, LS);
+  line(x0 + L*scale - cm*scale, y0 + cx*scale, x0 + L*scale, y0 + cx*scale, LS);
+  ctx.restore();
+}
+
+function drawNetball() {
+  const L=30.5, W=15.25, third=L/3, centreR=0.45, goalR=4.9, run=3, scale=22;
+  const vw=(L+2*run)*scale, vh=(W+2*run)*scale;
+  stage.width=1200; stage.height=Math.round(1200*vh/vw);
+  const x0=run*scale, y0=run*scale;
+
+  clear();
+  rect(0,0,stage.width,stage.height,state.colours.runoff);
+  ctx.save();
+  ctx.translate((stage.width - L*scale)/2, (stage.height - W*scale)/2);
+  rect(x0,y0,L*scale,W*scale,state.colours.play);
+  const LS=state.colours.lines;
+  rect(x0,y0,L*scale,W*scale,null,LS);
+  // thirds
+  line(x0 + third*scale, y0, x0 + third*scale, y0 + W*scale, LS);
+  line(x0 + 2*third*scale, y0, x0 + 2*third*scale, y0 + W*scale, LS);
+  // centre
+  circle(x0 + (L/2)*scale, y0 + (W/2)*scale, centreR*scale, LS);
+  // shooting semicircles
+  const leftX = x0, rightX = x0 + L*scale;
+  arc(leftX, y0 + (W/2)*scale, goalR*scale, -Math.PI/2, Math.PI/2, LS);
+  arc(rightX, y0 + (W/2)*scale, goalR*scale, Math.PI/2, -Math.PI/2, LS);
+  ctx.restore();
+}
+
+function drawBasketball() {
+  // Simplified FIBA full-court with arcs
+  const L=28, W=15, run=3, scale=25;
+  const vw=(L+2*run)*scale, vh=(W+2*run)*scale;
+  stage.width=1200; stage.height=Math.round(1200*vh/vw);
+  const x0=run*scale, y0=run*scale;
+  clear();
+  rect(0,0,stage.width,stage.height,state.colours.runoff);
+  ctx.save();
+  ctx.translate((stage.width - L*scale)/2, (stage.height - W*scale)/2);
+  rect(x0,y0,L*scale,W*scale,state.colours.play);
+  const LS=state.colours.lines;
+  rect(x0,y0,L*scale,W*scale,null,LS);
+  // centre line
+  line(x0 + (L/2)*scale, y0, x0 + (L/2)*scale, y0 + W*scale, LS);
+  // centre circle r=1.8
+  circle(x0 + (L/2)*scale, y0 + (W/2)*scale, 1.8*scale, LS);
+  // key (paint) areas: 4.9m wide x 5.8m deep
+  const keyW=4.9, keyD=5.8;
+  rect(x0, y0 + (W/2 - keyW/2)*scale, keyD*scale, keyW*scale, null, LS);
+  rect(x0 + (L - keyD)*scale, y0 + (W/2 - keyW/2)*scale, keyD*scale, keyW*scale, null, LS);
+  // three-point arcs approx r=6.75 from hoop
+  const hoopOffset = 1.575, r3=6.75;
+  const leftCx = x0 + hoopOffset*scale, rightCx = x0 + (L - hoopOffset)*scale;
+  const cy = y0 + (W/2)*scale;
+  arc(leftCx, cy, r3*scale, -Math.acos((keyW/2)/r3), Math.acos((keyW/2)/r3), LS);
+  arc(rightCx, cy, r3*scale, Math.PI - Math.acos((keyW/2)/r3), Math.PI + Math.acos((keyW/2)/r3), LS);
+  ctx.restore();
+}
+
+function drawPickleball() {
+  const L=13.41, W=6.10, kitchen=2.13, run=2, scale=40;
+  const vw=(L+2*run)*scale, vh=(W+2*run)*scale;
+  stage.width=1200; stage.height=Math.round(1200*vh/vw);
+  const x0=run*scale, y0=run*scale;
+  clear();
+  rect(0,0,stage.width,stage.height,state.colours.runoff);
+  ctx.save();
+  ctx.translate((stage.width - L*scale)/2, (stage.height - W*scale)/2);
+  rect(x0,y0,L*scale,W*scale,state.colours.play);
+  const LS=state.colours.lines;
+  rect(x0,y0,L*scale,W*scale,null,LS);
+  // net
+  line(x0 + (L/2)*scale, y0, x0 + (L/2)*scale, y0 + W*scale, LS);
+  // kitchen both sides
+  rect(x0 + (L/2 - kitchen)*scale, y0, kitchen*scale, W*scale, state.colours.kitchen, LS, 4);
+  rect(x0 + (L/2)*scale, y0, kitchen*scale, W*scale, state.colours.kitchen, LS, 4);
+  // midline
+  line(x0 + (L/2 - kitchen)*scale, y0 + (W/2)*scale, x0 + (L/2 + kitchen)*scale, y0 + (W/2)*scale, LS);
+  ctx.restore();
+}
+
+const DRAWERS = {{ tennis: drawTennis, netball: drawNetball, basketball: drawBasketball, pickleball: drawPickleball }};
+
+function render() { (DRAWERS[state.sport]||drawTennis)(); }
+
+function $(id){return document.getElementById(id)}
+function setActiveTab(id, group){ group.forEach(x=>$(x).classList.remove('active')); $(id).classList.add('active'); }
+
+// sport tabs
+['tab-tennis','tab-basketball','tab-netball','tab-pickleball'].forEach(id=>$((id)).onclick=()=>{
+  state.sport = id.replace('tab-','');
+  setActiveTab(id,['tab-tennis','tab-basketball','tab-netball','tab-pickleball']);
+  loadDefaults();
+  render();
+});
+
+// view toggle
+['view-aerial','view-field'].forEach(id=>$((id)).onclick=()=>{
+  state.view = id==='view-field' ? 'field':'aerial';
+  document.querySelector('.canvasHost')?.classList.toggle('view-field', state.view==='field');
+  setActiveTab(id,['view-aerial','view-field']);
+});
+
+// colour pickers
+const pickers = { play: $('color-play'), runoff: $('color-runoff'), lines: $('color-lines'), key: $('color-key'), circle: $('color-circle'), kitchen: $('color-kitchen') };
+Object.keys(pickers).forEach(k=> pickers[k].oninput = ()=>{ state.colours[k]=pickers[k].value; render(); } );
+
+// palette
+let focusedInput = 'play';
+Object.keys(pickers).forEach(k=> pickers[k].addEventListener('focus',()=> focusedInput=k));
+PALETTE.forEach(hex=>{
+  const sw = document.createElement('div'); sw.className='sw'; sw.style.background=hex;
+  sw.title=hex; sw.onclick = ()=>{ pickers[focusedInput].value=hex; pickers[focusedInput].dispatchEvent(new Event('input')); };
+  $('palette').appendChild(sw);
+});
+
+// defaults per sport
+function loadDefaults(){
+  if(state.sport==='tennis') { $('row-key').style.display='none'; $('row-circle').style.display='none'; $('row-kitchen').style.display='none'; pickers.play.value='#226d2b'; pickers.runoff.value='#b24b1a'; pickers.lines.value='#ffffff'; }
+  if(state.sport==='netball') { $('row-key').style.display='none'; $('row-circle').style.display='block'; $('row-kitchen').style.display='none'; pickers.play.value='#1ea7ff'; pickers.runoff.value='#0b2a66'; pickers.lines.value='#ffffff'; pickers.circle.value='#1ea7ff'; }
+  if(state.sport==='basketball') { $('row-key').style.display='block'; $('row-circle').style.display='block'; $('row-kitchen').style.display='none'; pickers.play.value='#1e40af'; pickers.runoff.value='#0b2a66'; pickers.lines.value='#ffffff'; pickers.key.value='#1ea7ff'; pickers.circle.value='#1ea7ff'; }
+  if(state.sport==='pickleball') { $('row-key').style.display='none'; $('row-circle').style.display='none'; $('row-kitchen').style.display='block'; pickers.play.value='#1e40af'; pickers.runoff.value='#0b2a66'; pickers.lines.value='#ffffff'; pickers.kitchen.value='#1ea7ff'; }
+  Object.keys(pickers).forEach(k=> state.colours[k]=pickers[k].value);
+}
+loadDefaults(); render();
+
+// downloads
+$('btn-png').onclick = ()=>{
+  const a=document.createElement('a');
+  a.download = state.sport + '-visual.png';
+  a.href = stage.toDataURL('image/png');
+  a.click();
+};
+$('btn-pdf').onclick = ()=>{
+  const w=window.open('','_blank');
+  const img=stage.toDataURL('image/png');
+  w.document.write('<html><head><title>Court Visual</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;"><img src="'+img+'" style="max-width:100%;width:1000px"/></body></html>');
+  w.document.close(); w.focus(); w.print();
+};
+
+// lead forms
+Array.from(document.querySelectorAll('form[data-form="lead"]')).forEach(form=>{
+  form.setAttribute('action','https://formsubmit.co/'+EMAIL);
+});
+</script>
+</body>
+</html>
